@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+module Environment
+    USER_PLUGIN_PATH = File.expand_path(File.join(CONFROOT, "plugin"))
+end
+
 module Plugin::Mikustore
   module Utils
     extend Utils

@@ -9,8 +9,9 @@ module Plugin::Mikustore
       kwargs = opt.first || {}
       @plugin = package
       @depends = []
-      @plugin_base = kwargs[:plugin_base] || "~/.mikutter/plugin"
+      @plugin_base = kwargs[:plugin_base] || Environment::USER_PLUGIN_PATH
       @database = {}
+      @database[package[:slug]] = package
       Plugin.filtering(:mikustore_plugins, []).first.each do |entry|
         @database[entry[:slug]] = entry
       end

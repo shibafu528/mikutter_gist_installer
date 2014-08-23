@@ -1,0 +1,12 @@
+---
+slug: :mikutter_gist_installer
+depends:
+  mikutter: 3.0.0
+  plugin:
+  - settings
+  - gui
+  - gtk
+version: '0.1'
+author: shibafu528
+name: Gist Installer
+description: mikutterにGistのプレビューとインストール機能を追加します
