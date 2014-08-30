@@ -45,6 +45,10 @@ class Gist
         }
     end
 
+    def exist?
+        Plugin::Mikustore::Utils.installed_version(entrypoint[:slug]) || FileTest.exist?(File.expand_path(File.join(Environment::USER_PLUGIN_PATH, spec[:slug].to_s)))
+    end
+
     attr_reader :id
 end
 
@@ -74,21 +78,23 @@ Plugin.create :mikutter_gist_installer do
                         hbox = Gtk::HBox.new
                         hbox.pack_start Gtk::Label.new("#{json["owner"]["login"]}/#{entrypoint[:name]}", false), true, true
                         install_button = Gtk::Button.new
-                        if Plugin::Mikustore::Utils.installed_version(entrypoint[:slug])
+                        if gist.exist?
                             install_button.set_label("アンインストール")
                         else
                             install_button.set_label("インストール")
                         end
                         install_button.signal_connect("clicked") do
-                            if Plugin::Mikustore::Utils.installed_version(entrypoint[:slug])
+                            if gist.exist?
                                 # Uninstall
-                                spec = gist.spec
-                                Plugin.uninstall(spec[:slug])
-                                plugin_dir = File.expand_path(File.join(Environment::USER_PLUGIN_PATH, spec[:slug].to_s))
-                                if FileTest.exist?(plugin_dir)
-                                    FileUtils.rm_rf(plugin_dir)
+                                if ::Gtk::Dialog.confirm("アンインストールしますが、よろしいですか？")
+                                    spec = gist.spec
+                                    Plugin.uninstall(spec[:slug])
+                                    plugin_dir = File.expand_path(File.join(Environment::USER_PLUGIN_PATH, spec[:slug].to_s))
+                                    if FileTest.exist?(plugin_dir)
+                                        FileUtils.rm_rf(plugin_dir)
+                                    end
+                                    install_button.set_label("インストール")
                                 end
-                                install_button.set_label("インストール")
                             else
                                 # Install
                                 installer = Plugin::Mikustore::Installer.new(gist.spec)
