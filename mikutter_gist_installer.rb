@@ -73,6 +73,7 @@ Plugin.create :mikutter_gist_installer do
                 if entrypoint.empty?
                     ::Gtk.openurl("https://gist.github.com/#{id}")
                     Plugin::GUI::Tab.instance(slug).destroy if Plugin::GUI::Tab.exist?(slug)
+                    UserConfig[:opened_gists] = UserConfig[:opened_gists].melt.reject {|i| i==id}
                 else                
                     Delayer.new do
                         gist_tab = tab(slug, "Gist/#{id}") do
