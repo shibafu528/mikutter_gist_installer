@@ -69,78 +69,82 @@ Plugin.create :mikutter_gist_installer do
 
                 gist = Gist.new(id, json)
                 entrypoint = gist.entrypoint
-                p entrypoint
-                
-                Delayer.new do
-                    gist_tab = tab(slug, "Gist/#{id}") do
-                        set_deletable true
-                        shrink
-                        hbox = Gtk::HBox.new
-                        hbox.pack_start Gtk::Label.new("#{json["owner"]["login"]}/#{entrypoint[:name]}", false), true, true
-                        install_button = Gtk::Button.new
-                        if gist.exist?
-                            install_button.set_label("アンインストール")
-                        else
-                            install_button.set_label("インストール")
-                        end
-                        install_button.signal_connect("clicked") do
+
+                if entrypoint.empty?
+                    ::Gtk.openurl("https://gist.github.com/#{id}")
+                    Plugin::GUI::Tab.instance(slug).destroy if Plugin::GUI::Tab.exist?(slug)
+                else                
+                    Delayer.new do
+                        gist_tab = tab(slug, "Gist/#{id}") do
+                            set_deletable true
+                            shrink
+                            hbox = Gtk::HBox.new
+                            hbox.pack_start Gtk::Label.new("#{json["owner"]["login"]}/#{entrypoint[:name]}", false), true, true
+                            install_button = Gtk::Button.new
                             if gist.exist?
-                                # Uninstall
-                                if ::Gtk::Dialog.confirm("アンインストールしますが、よろしいですか？")
-                                    spec = gist.spec
-                                    Plugin.uninstall(spec[:slug])
-                                    plugin_dir = File.expand_path(File.join(Environment::USER_PLUGIN_PATH, spec[:slug].to_s))
-                                    if FileTest.exist?(plugin_dir)
-                                        FileUtils.rm_rf(plugin_dir)
-                                    end
-                                    install_button.set_label("インストール")
-                                end
+                                install_button.set_label("アンインストール")
                             else
-                                # Install
-                                installer = Plugin::Mikustore::Installer.new(gist.spec)
-                                if installer.valid
-                                    install_button.sensitive = false
-                                    install_button.set_label("インストール中")
-                                    installer.install.next do
-                                        install_button.sensitive = true
-                                        install_button.set_label("アンインストール")
-                                    end.trap do |e|
-                                        Gtk::Dialog.alert("プラグインのインストールに失敗しました。")
-                                        install_button.sensitive = true
+                                install_button.set_label("インストール")
+                            end
+                            install_button.signal_connect("clicked") do
+                                if gist.exist?
+                                    # Uninstall
+                                    if ::Gtk::Dialog.confirm("アンインストールしますが、よろしいですか？")
+                                        spec = gist.spec
+                                        Plugin.uninstall(spec[:slug])
+                                        plugin_dir = File.expand_path(File.join(Environment::USER_PLUGIN_PATH, spec[:slug].to_s))
+                                        if FileTest.exist?(plugin_dir)
+                                            FileUtils.rm_rf(plugin_dir)
+                                        end
                                         install_button.set_label("インストール")
-                                        notice e
-                                        raise e
-                                    end.terminate("プラグインのインストールに失敗しました。")
+                                    end
                                 else
-                                    Gtk::Dialog.alert("依存関係の解析に失敗しました。")
+                                    # Install
+                                    installer = Plugin::Mikustore::Installer.new(gist.spec)
+                                    if installer.valid
+                                        install_button.sensitive = false
+                                        install_button.set_label("インストール中")
+                                        installer.install.next do
+                                            install_button.sensitive = true
+                                            install_button.set_label("アンインストール")
+                                        end.trap do |e|
+                                            Gtk::Dialog.alert("プラグインのインストールに失敗しました。")
+                                            install_button.sensitive = true
+                                            install_button.set_label("インストール")
+                                            notice e
+                                            raise e
+                                        end.terminate("プラグインのインストールに失敗しました。")
+                                    else
+                                        Gtk::Dialog.alert("依存関係の解析に失敗しました。")
+                                    end
                                 end
                             end
-                        end
-                        hbox.pack_end install_button, false, false
-                        browser_button = Gtk::Button.new("ブラウザで開く")
-                        browser_button.signal_connect("clicked") do
-                            ::Gtk.openurl("https://gist.github.com/#{id}")
-                        end
-                        hbox.pack_end browser_button, false, false
-                        nativewidget hbox
-                        expand
-                        frame = Gtk::Frame.new("Code")
-                        vbox = Gtk::VBox.new
-                        vbox.pack_start Gtk::Label.new("※ 信用できるプラグイン以外はインストールしないでください ※"), false, false
-                        swindow = Gtk::ScrolledWindow.new
-                        swindow.set_shadow_type Gtk::SHADOW_NONE
+                            hbox.pack_end install_button, false, false
+                            browser_button = Gtk::Button.new("ブラウザで開く")
+                            browser_button.signal_connect("clicked") do
+                                ::Gtk.openurl("https://gist.github.com/#{id}")
+                            end
+                            hbox.pack_end browser_button, false, false
+                            nativewidget hbox
+                            expand
+                            frame = Gtk::Frame.new("Code")
+                            vbox = Gtk::VBox.new
+                            vbox.pack_start Gtk::Label.new("※ 信用できるプラグイン以外はインストールしないでください ※"), false, false
+                            swindow = Gtk::ScrolledWindow.new
+                            swindow.set_shadow_type Gtk::SHADOW_NONE
 
-                        textview = Gtk::TextView.new
-                        textview.buffer.set_text entrypoint[:values]["content"]
-                        textview.set_editable false
-                        textview.set_wrap_mode Gtk::TextTag::WRAP_CHAR
+                            textview = Gtk::TextView.new
+                            textview.buffer.set_text entrypoint[:values]["content"]
+                            textview.set_editable false
+                            textview.set_wrap_mode Gtk::TextTag::WRAP_CHAR
 
-                        swindow.add_with_viewport(textview)
-                        vbox.pack_start swindow, true, true
-                        frame << vbox
-                        nativewidget frame
+                            swindow.add_with_viewport(textview)
+                            vbox.pack_start swindow, true, true
+                            frame << vbox
+                            nativewidget frame
+                        end
+                        gist_tab.active! if !force
                     end
-                    gist_tab.active! if !force
                 end
             end
         end
