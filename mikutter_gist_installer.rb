@@ -151,8 +151,7 @@ Plugin.create :mikutter_gist_installer do
         end
     end
 
-    Gtk::TimeLine.addopenway(/^https?:\/\/gist\.github\.com\/.+\/[a-f0-9]+/) do |shrinked_url, cancel|
-        url = MessageConverters.expand_url_one(shrinked_url)
+    Gtk::TimeLine.addopenway(/^https?:\/\/gist\.github\.com\/.+\/[a-f0-9]+/) do |url, cancel|
         if /^https?:\/\/gist\.github\.com\/.+\/([a-f0-9]+)/ =~ url
             show_gist($1)
         end
